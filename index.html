@@ -22,7 +22,11 @@ var channels = 2;
 // sample rate of the AudioContext
 var frameCount = arrayBuffer.length / 4;
 console.log("frameCount " + frameCount);
-var audioCtx = new (window.webkitAudioContext)();
+
+var AudioContext = window.AudioContext || window.webkitAudioContext;
+
+var audioCtx = new AudioContext();
+
 
 console.log("audioCtx.sampleRate " +  audioCtx.sampleRate)
 
