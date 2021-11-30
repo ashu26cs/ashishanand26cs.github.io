@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html style="height: 100%;">
+    <head>
+        <title id="title">iOS 15.1 app reloads on cancel capture</title>
+        <link rel="manifest" href="manifest.json" crossorigin="use-credentials" />
+        <link rel="stylesheet" type="text/css" href="css/styles.css" />
+        <meta
+            name="viewport"
+            content="width=device-width, initial-scale=1, maximum-scale=1"
+        />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+        <meta name="apple-mobile-web-app-title" content="Sample" />
+    </head>
+
+    <body>
+        <div id="instructions" class="split">
+            <ol type="1">
+                <li>Create PWA</li>
+                <li>Grant mic permission - Allow</li>
+                <li>Click 'Capture audio'</li>
+                <li>There will be a yellow panel of mic capture on top</li>
+                <li>Click on the panel</li>
+                <li>On the "Stop audio recording popup" click cancel</li>
+                <li>Observe page reload(BUG)</li>
+              </ol>
+        </div>
+        <div id="content" class="split">
+            <button id="audio" onclick=captureAudio()>Capture audio</button>
+        </div>
+    </body>
+
+    <script>
+        function captureAudio() {
+            if (!navigator.mediaDevices) {
+                console.log("audio capture not supported");
+                return;
+            }
+            navigator.mediaDevices
+                .getUserMedia({
+                    audio: true,
+                    video: false
+                })
+                .then((audioStream) => {
+                    console.log("audio already capturing");
+
+                })
+                .catch(e => {
+                    console.log("recording audio failed");
+                });
+        }
+
+    </script>
+</html>
