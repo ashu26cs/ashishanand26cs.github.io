@@ -1,0 +1,148 @@
+<!doctype html>
+<html style="height: 100%;">
+<head>
+<title>audio app</title>
+<meta
+    name="viewport"
+    content="width=device-width, initial-scale=1, maximum-scale=1"
+/>
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black" />
+<meta name="apple-mobile-web-app-title" content="Sample" />
+</head>
+<body>
+    <p id="instructions"></p>
+    <div id="test"></div>
+</body>
+<input type="button" value="MicAccess" id="micAccess" />
+<input type="button" value="MicAccessStop" id="micAccessStop" />
+<input type="button" value="Start" id="start" />
+<input type="button" value="Stop" id="stop" />
+<input type="button" value="ResetAudio" id="resetAudio" />
+<script>
+var pc1,pc2,ctx, micCaptureStream = null;
+var audio = null;
+
+document.getElementById("resetAudio").onclick = () =>
+{
+	let stream = audio.srcObject;
+	 if (stream) {
+        stream.getTracks().forEach((track) => {
+            track.enabled = false;
+			console.info("Reset audio track");
+            });
+    }
+    //audioTrack.enabled = false;
+    setTimeout(() => {
+        //audioTrack.enabled = true;
+		if (stream) {
+		 stream.getTracks().forEach((track) => {
+            track.enabled = true;
+            });
+			}
+    }, 0);
+}
+document.getElementById("micAccessStop").onclick = () =>
+{
+
+	let stream = micCaptureStream;
+    micCaptureStream = null;
+
+    if (stream) {
+        stream.getTracks().forEach((track) => {
+            track.stop();
+            });
+    }
+    
+}
+document.getElementById("micAccess").onclick = () =>
+{
+	let audioOptions = {
+        sampleRate: 48000
+    };
+    navigator.mediaDevices
+        .getUserMedia({ audio: audioOptions })
+        .then(media_obj => {
+			micCaptureStream = media_obj;
+            console.log("Mic capture started");
+        })
+        .catch(err => {
+            console.error("Mic permission was denied");
+        });
+
+}
+function instructions(text) {
+    if(!text) {
+        document.getElementById('instructions').innerText = '';
+        return;
+    }
+    document.getElementById('instructions').innerText += text + '\n';
+}
+
+document.getElementById("start").onclick = async() =>
+{
+    instructions(); // clear instructions.
+ 
+    audio = document.createElement('audio');
+    video = document.createElement('video');
+    // The actual test.
+    ctx = new AudioContext();
+    ctx.suspend();
+    const oscillator = ctx.createOscillator();
+    oscillator.start();
+    let panNode;
+    let setPan;
+    if (ctx.createStereoPanner) {
+        panNode = ctx.createStereoPanner();
+        setPan = (pan) => panNode.pan.value = pan;
+    } else { // Fallback for Safari.
+        panNode = ctx.createPanner();
+        panNode.panningModel = 'equalpower';
+        setPan = (pan) => panNode.setPosition(pan, 0, 1 - Math.abs(pan));
+    }
+    const dst = ctx.createMediaStreamDestination();
+    oscillator.connect(panNode).connect(dst);
+    instructions('This is a manual test that verifies stereo audio');
+    instructions('Click the button to start the test.');
+
+	ctx.resume();
+    audio.play();
+
+    pc1 = new RTCPeerConnection();
+    pc2 = new RTCPeerConnection();
+    
+    pc1.onicecandidate = e => e.candidate && pc2.addIceCandidate(e.candidate);
+    pc2.onicecandidate = e => e.candidate && pc1.addIceCandidate(e.candidate);
+    dst.stream.getTracks().forEach(t => pc1.addTrack(t, dst.stream));
+    pc2.ontrack = e => audio.srcObject = e.streams[0];
+    instructions('Attempting to establish WebRTC connection...');
+    const offer = await pc1.createOffer();
+    await pc1.setLocalDescription(offer)
+    await pc2.setRemoteDescription(offer);
+    const answer = await pc2.createAnswer();
+    // Here is the trick for stereo: SDP munging!
+    await pc2.setLocalDescription({type: 'answer', sdp: answer.sdp.replace('useinbandfec=1', 'useinbandfec=1;stereo=1')});
+    await pc1.setRemoteDescription({type: 'answer', sdp: answer.sdp.replace('useinbandfec=1', 'useinbandfec=1;stereo=1')});
+    await (new Promise((resolve, reject) => {
+        if (pc2.connectionState === 'connected') return resolve();
+        pc2.onconnectionstatechange = e => {
+            if (pc2.connectionState === 'connected') {
+                resolve();
+            }
+        };       
+    }))
+}
+
+document.getElementById("stop").onclick = () => {
+            pc1.close();
+			pc2.close();
+			ctx.close();
+			if (micCaptureStream)
+			{
+				micCaptureStream.getTracks().forEach((track) => {
+					track.stop();
+				});
+			}
+}
+</script>   
+</html>
