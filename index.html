@@ -25,7 +25,7 @@ instructions(`AudioContext Info: sampleRate: ${ctx.sampleRate}Hz, state: ${ctx.s
 
 // Listen for AudioContext state changes (can indicate system audio changes)
 ctx.addEventListener('sinkchange', () => {
-    instructions('AudioContext sink changed - audio output device may have changed : ${ctx.state}');
+    instructions(`AudioContext: ${ctx.sampleRate}Hz, State: ${ctx.state}`);
     console.log('AudioContext state changed to:', ctx.state);
 });
 
@@ -106,16 +106,19 @@ document.getElementById("start").onclick = async() =>
 
     audio.addEventListener("suspend", (event) => {
         console.log("Data loading has been suspended.");
+        instructions("Data loading has been suspended.");
     });
 
     audio.addEventListener("ended", (event) => {
   console.log(
     "Video stopped either because it has finished playing or no further data is available.",
   );
+  instructions('Video stopped either because it has finished playing or no further data is available.');
 });
 
 audio.addEventListener("stalled", (event) => {
   console.log("Failed to fetch data, but trying.");
+  instructions("Failed to fetch data, but trying.");
 });
     
     // The actual test.
