@@ -21,15 +21,11 @@ var pc1,pc2,ctx, micCaptureStream, audio,oscillator,pannode,dst,gainnode;
 ctx = new AudioContext();
 
 // Monitor AudioContext for system audio information
-console.log('AudioContext Info:', {
-    sampleRate: ctx.sampleRate,
-    state: ctx.state,
-    baseLatency: ctx.baseLatency || 'Unknown',
-    outputLatency: ctx.outputLatency || 'Unknown'
-});
+instructions(`AudioContext Info: sampleRate: ${ctx.sampleRate}Hz, state: ${ctx.state}, baseLatency: ${ctx.baseLatency || 'Unknown'}, outputLatency: ${ctx.outputLatency || 'Unknown'}`);
 
 // Listen for AudioContext state changes (can indicate system audio changes)
 ctx.addEventListener('sinkchange', () => {
+    instructions('AudioContext sink changed - audio output device may have changed : ${ctx.state}');
     console.log('AudioContext state changed to:', ctx.state);
 });
 
@@ -57,28 +53,7 @@ document.getElementById("start").onclick = async() =>
  
     audio = document.createElement('audio');
     
-    // Try to detect available audio devices
-    try {
-        const devices = await navigator.mediaDevices.enumerateDevices();
-        const audioOutputs = devices.filter(device => device.kind === 'audiooutput');
-        instructions(`Found ${audioOutputs.length} audio output devices`);
-        
-        // Log device info
-        audioOutputs.forEach((device, index) => {
-            console.log(`Audio Device ${index + 1}:`, device.label || 'Unknown Device', device.deviceId);
-        });
-        
-        // Try to detect default device
-        const defaultDevice = audioOutputs.find(device => 
-            device.deviceId === 'default' || device.label.toLowerCase().includes('default')
-        );
-        if (defaultDevice) {
-            instructions(`Default device: ${defaultDevice.label || 'Unknown Device'}`);
-        }
-    } catch (error) {
-        instructions(`Device enumeration failed: ${error.message}`);
-    }
-    
+  
     // Monitor device changes
     navigator.mediaDevices.addEventListener('devicechange', () => {
         instructions('Audio device configuration changed!');
